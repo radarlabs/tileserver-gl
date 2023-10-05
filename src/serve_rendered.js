@@ -776,13 +776,13 @@ export const serve_rendered = {
             const ctx = canvas.getContext('2d');
             ctx.scale(scale, scale);
 
-            ctx.font = '12px sans-serif';
+            ctx.font = '10px sans-serif';
             const text = item.attributionText;
             const textMetrics = ctx.measureText(text);
             const textWidth = textMetrics.width;
             const textHeight = 14;
 
-            const padding = 10;
+            const padding = 6;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.fillRect(width - textWidth - padding, height - textHeight - padding, textWidth + padding, textHeight + padding);
             ctx.fillStyle = 'rgba(0,0,0,.8)';
