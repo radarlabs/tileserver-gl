@@ -784,9 +784,18 @@ export const serve_rendered = {
 
             const padding = 6;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.fillRect(width - textWidth - padding, height - textHeight - padding, textWidth + padding, textHeight + padding);
+            ctx.fillRect(
+              width - textWidth - padding,
+              height - textHeight - padding,
+              textWidth + padding,
+              textHeight + padding,
+            );
             ctx.fillStyle = 'rgba(0,0,0,.8)';
-            ctx.fillText(item.attributionText, width - textWidth - (padding / 2), height - textHeight + 8);
+            ctx.fillText(
+              item.attributionText,
+              width - textWidth - padding / 2,
+              height - textHeight + 8,
+            );
 
             composite_array.push({ input: canvas.toBuffer() });
           }
