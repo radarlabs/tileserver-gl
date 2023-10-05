@@ -279,7 +279,7 @@ const extractMarkersFromQuery = (query, options, transformer) => {
     let iconURI = markerParts[1];
     // Check if icon is served via http otherwise marker icons are expected to
     // be provided as filepaths relative to configured icon path
-    if (!(iconURI.startsWith('http://') || iconURI.startsWith('https://'))) {
+    if (!(iconURI.startsWith('http://') || iconURI.startsWith('https://') || iconURI.startsWith('data:'))) {
       // Sanitize URI with sanitize-filename
       // https://www.npmjs.com/package/sanitize-filename#details
       iconURI = sanitize(iconURI);
