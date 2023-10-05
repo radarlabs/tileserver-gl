@@ -771,7 +771,7 @@ export const serve_rendered = {
             composite_array.push({ input: canvas.toBuffer() });
           }
 
-          if (item.attributionText) {
+          if (opt_mode === 'static' && item.attributionText) {
             const canvas = createCanvas(scale * width, scale * height);
             const ctx = canvas.getContext('2d');
             ctx.scale(scale, scale);
