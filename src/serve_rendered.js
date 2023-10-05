@@ -294,6 +294,8 @@ const extractMarkersFromQuery = (query, options, transformer) => {
       // When we encounter a remote icon check if the configuration explicitly allows them.
     } else if (options.allowRemoteMarkerIcons !== true) {
       continue;
+    } else if (options.allowInlineMarkerImages !== true) {
+      continue;
     }
 
     // Ensure marker location could be parsed
