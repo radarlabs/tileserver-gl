@@ -1407,7 +1407,8 @@ export const serve_rendered = {
       dataProjWGStoInternalWGS: null,
       lastModified: new Date().toUTCString(),
       watermark: params.watermark || options.watermark,
-      staticAttributionText: params.staticAttributionText || options.staticAttributionText,
+      staticAttributionText:
+        params.staticAttributionText || options.staticAttributionText,
     };
     repo[id] = repoobj;
 
