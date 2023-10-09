@@ -20,6 +20,8 @@ import { serve_data } from './serve_data.js';
 import { serve_style } from './serve_style.js';
 import { serve_font } from './serve_font.js';
 import { getTileUrls, getPublicUrl } from './utils.js';
+import statusMonitor from 'express-status-monitor';
+
 
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
@@ -39,8 +41,9 @@ const serve_rendered = (
  */
 function start(opts) {
   console.log('Starting server');
-
   const app = express().disable('x-powered-by');
+  app.use(statusMonitor());
+
   const serving = {
     styles: {},
     rendered: {},
@@ -146,6 +149,8 @@ function start(opts) {
       });
     }),
   );
+
+
 
   if (options.dataDecorator) {
     try {
