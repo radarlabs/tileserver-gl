@@ -23,6 +23,7 @@ import {
   getTileUrls,
   isValidHttpUrl,
   fixTileJSONCenter,
+  generateMarker,
 } from './utils.js';
 import {
   PMtilesOpen,
@@ -242,6 +243,10 @@ const parseMarkerOptions = (optionsList, marker) => {
           marker.offsetY = parseFloat(providedOffset[1]);
         }
         break;
+      // Custom color when using default marker
+      case 'color':
+        marker.color = String(optionParts[1]);
+        break;
     }
   }
 };
@@ -284,12 +289,16 @@ const extractMarkersFromQuery = (query, options, transformer) => {
     }
 
     let iconURI = markerParts[1];
+
     // Check if icon is served via http otherwise marker icons are expected to
     // be provided as filepaths relative to configured icon path
-    const isRemoteURL =
-      iconURI.startsWith('http://') || iconURI.startsWith('https://');
+    const isDefaultMarker = iconURI === 'default';
+    const isRemoteURL = iconURI.startsWith('http://') || iconURI.startsWith('https://');
     const isDataURL = iconURI.startsWith('data:');
-    if (!(isRemoteURL || isDataURL)) {
+
+    if (isDefaultMarker) {
+      iconURI = 'default'; // use built-in marker
+    } else if (!(isRemoteURL || isDataURL)) {
       // Sanitize URI with sanitize-filename
       // https://www.npmjs.com/package/sanitize-filename#details
       iconURI = sanitize(iconURI);
@@ -303,9 +312,9 @@ const extractMarkersFromQuery = (query, options, transformer) => {
 
       // When we encounter a remote icon check if the configuration explicitly allows them.
     } else if (isRemoteURL && options.allowRemoteMarkerIcons !== true) {
-      continue;
+      continue; // skip
     } else if (isDataURL && options.allowInlineMarkerImages !== true) {
-      continue;
+      continue; // skip
     }
 
     // Ensure marker location could be parsed
@@ -348,9 +357,16 @@ const precisePx = (ll, zoom) => {
  * @param {number} z Map zoom level.
  */
 const drawMarker = (ctx, marker, z) => {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     const img = new Image();
     const pixelCoords = precisePx(marker.location, z);
+
+    let imgSrc = marker.icon;
+    if (marker.icon === 'default') {
+      // use default built-in marker (svg -> dataURL)
+      const markerDataURL = await generateMarker(marker.scale, marker.color);
+      imgSrc = markerDataURL;
+    }
 
     const getMarkerCoordinates = (imageWidth, imageHeight, scale) => {
       // Images are placed with their top-left corner at the provided location
@@ -402,10 +418,10 @@ const drawMarker = (ctx, marker, z) => {
     };
 
     img.onload = drawOnCanvas;
+    img.src = imgSrc;
     img.onerror = (err) => {
       throw err;
     };
-    img.src = marker.icon;
   });
 };
 
