@@ -356,7 +356,7 @@ const precisePx = (ll, zoom) => {
  * @param {object} marker Marker object parsed by extractMarkersFromQuery.
  * @param {number} z Map zoom level.
  */
-const drawMarker = (ctx, marker, z) => {
+const drawMarker = (ctx, marker, z, scale) => {
   return new Promise(async (resolve) => {
     const img = new Image();
     const pixelCoords = precisePx(marker.location, z);
@@ -364,7 +364,8 @@ const drawMarker = (ctx, marker, z) => {
     let imgSrc = marker.icon;
     if (marker.icon === 'default') {
       // use default built-in marker (svg -> dataURL)
-      const markerDataURL = await generateMarker(marker.scale, marker.color);
+      const markerDataURL = await generateMarker(scale, marker.color);
+      marker.scale = marker.scale ? marker.scale * (1 / scale) : 1 / scale;
       imgSrc = markerDataURL;
     }
 
@@ -434,12 +435,12 @@ const drawMarker = (ctx, marker, z) => {
  * @param {List[Object]} markers Marker objects parsed by extractMarkersFromQuery.
  * @param {number} z Map zoom level.
  */
-const drawMarkers = async (ctx, markers, z) => {
+const drawMarkers = async (ctx, markers, z, scale) => {
   const markerPromises = [];
 
   for (const marker of markers) {
     // Begin drawing marker
-    markerPromises.push(drawMarker(ctx, marker, z));
+    markerPromises.push(drawMarker(ctx, marker, z, scale));
   }
 
   // Await marker drawings before continuing
@@ -598,7 +599,7 @@ const renderOverlay = async (
   });
 
   // Await drawing of markers before rendering the canvas
-  await drawMarkers(ctx, markers, z);
+  await drawMarkers(ctx, markers, z, scale);
 
   return canvas.toBuffer();
 };

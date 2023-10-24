@@ -204,6 +204,5 @@ export const generateMarker = async (scale = 1, color = '#000257') => {
   }
 
   const pngBuffer = await sharp(markerBuffer).png().toBuffer();
-
   return `data:image/png;base64,${pngBuffer.toString('base64')}`;
 };
