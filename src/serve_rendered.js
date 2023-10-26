@@ -672,9 +672,9 @@ export const serve_rendered = {
       scale,
       format,
       res,
-      next,
-      opt_overlay,
-      opt_mode = 'tile',
+      mode,
+      overlay,
+      query = {},
     ) => {
       if (
         Math.abs(lon) > 180 ||
@@ -703,7 +703,7 @@ export const serve_rendered = {
 
       const tileMargin = Math.max(options.tileMargin || 0, 0);
       let pool;
-      if (opt_mode === 'tile' && tileMargin === 0) {
+      if (mode === 'tile' && tileMargin === 0) {
         pool = item.map.renderers[scale];
       } else {
         pool = item.map.renderers_static[scale];
@@ -783,8 +783,8 @@ export const serve_rendered = {
           }
 
           var composite_array = [];
-          if (opt_overlay) {
-            composite_array.push({ input: opt_overlay });
+          if (overlay) {
+            composite_array.push({ input: overlay });
           }
           if (item.watermark) {
             const canvas = createCanvas(scale * width, scale * height);
@@ -800,14 +800,15 @@ export const serve_rendered = {
             composite_array.push({ input: canvas.toBuffer() });
           }
 
-          if (opt_mode === 'static' && item.staticAttributionText) {
+          // add attribution overlay
+          const attributionText = query.attributionText || item.staticAttributionText;
+          if (mode === 'static' && attributionText) {
             const canvas = createCanvas(scale * width, scale * height);
             const ctx = canvas.getContext('2d');
             ctx.scale(scale, scale);
 
             ctx.font = '10px sans-serif';
-            const text = item.staticAttributionText;
-            const textMetrics = ctx.measureText(text);
+            const textMetrics = ctx.measureText(attributionText);
             const textWidth = textMetrics.width;
             const textHeight = 14;
 
@@ -821,7 +822,7 @@ export const serve_rendered = {
             );
             ctx.fillStyle = 'rgba(0,0,0,.8)';
             ctx.fillText(
-              item.staticAttributionText,
+              attributionText,
               width - textWidth - padding / 2,
               height - textHeight + 8,
             );
@@ -908,7 +909,7 @@ export const serve_rendered = {
           scale,
           format,
           res,
-          next,
+          'tile',
         );
       },
     );
@@ -996,9 +997,9 @@ export const serve_rendered = {
               scale,
               format,
               res,
-              next,
-              overlay,
               'static',
+              overlay,
+              req.query,
             );
           } catch (e) {
             next(e);
@@ -1077,9 +1078,9 @@ export const serve_rendered = {
             scale,
             format,
             res,
-            next,
-            overlay,
             'static',
+            overlay,
+            req.query,
           );
         } catch (e) {
           next(e);
@@ -1211,9 +1212,9 @@ export const serve_rendered = {
               scale,
               format,
               res,
-              next,
-              overlay,
               'static',
+              overlay,
+              req.query,
             );
           } catch (e) {
             next(e);
