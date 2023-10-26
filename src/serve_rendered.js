@@ -935,11 +935,6 @@ export const serve_rendered = {
               return res.sendStatus(404);
             }
 
-            // override attribution text
-            if (req.query.attributionText) {
-              item.staticAttributionText = req.query.attributionText;
-            }
-
             const raw = req.params.raw;
             const z = +req.params.z;
             let x = +req.params.x;
@@ -1484,8 +1479,7 @@ export const serve_rendered = {
       dataProjWGStoInternalWGS: null,
       lastModified: new Date().toUTCString(),
       watermark: params.watermark || options.watermark,
-      staticAttributionText:
-        params.staticAttributionText || options.staticAttributionText,
+      staticAttributionText: params.staticAttributionText || options.staticAttributionText,
     };
     repo[id] = repoobj;
 
