@@ -935,7 +935,7 @@ export const serve_rendered = {
             }
 
             // override attribution text
-            if (req.query.attributionText) {
+            if ('attributionText' in req.query) {
               item.staticAttributionText = req.query.attributionText;
             }
 
