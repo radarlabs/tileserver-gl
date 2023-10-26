@@ -933,6 +933,12 @@ export const serve_rendered = {
             if (!item) {
               return res.sendStatus(404);
             }
+
+            // override attribution text
+            if (req.query.attributionText) {
+              item.staticAttributionText = req.query.attributionText;
+            }
+
             const raw = req.params.raw;
             const z = +req.params.z;
             let x = +req.params.x;
