@@ -672,8 +672,8 @@ export const serve_rendered = {
       scale,
       format,
       res,
-      mode,
-      overlay,
+      opt_mode,
+      opt_overlay,
       query = {},
     ) => {
       if (
@@ -703,7 +703,7 @@ export const serve_rendered = {
 
       const tileMargin = Math.max(options.tileMargin || 0, 0);
       let pool;
-      if (mode === 'tile' && tileMargin === 0) {
+      if (opt_mode === 'tile' && tileMargin === 0) {
         pool = item.map.renderers[scale];
       } else {
         pool = item.map.renderers_static[scale];
@@ -783,8 +783,8 @@ export const serve_rendered = {
           }
 
           var composite_array = [];
-          if (overlay) {
-            composite_array.push({ input: overlay });
+          if (opt_overlay) {
+            composite_array.push({ input: opt_overlay });
           }
           if (item.watermark) {
             const canvas = createCanvas(scale * width, scale * height);
@@ -802,7 +802,7 @@ export const serve_rendered = {
 
           // add attribution overlay
           const attributionText = query.attributionText || item.staticAttributionText;
-          if (mode === 'static' && attributionText) {
+          if (opt_mode === 'static' && attributionText) {
             const canvas = createCanvas(scale * width, scale * height);
             const ctx = canvas.getContext('2d');
             ctx.scale(scale, scale);
