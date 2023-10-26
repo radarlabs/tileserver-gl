@@ -672,9 +672,9 @@ export const serve_rendered = {
       scale,
       format,
       res,
-      next,
+      opt_mode,
       opt_overlay,
-      opt_mode = 'tile',
+      query = {},
     ) => {
       if (
         Math.abs(lon) > 180 ||
@@ -800,14 +800,15 @@ export const serve_rendered = {
             composite_array.push({ input: canvas.toBuffer() });
           }
 
-          if (opt_mode === 'static' && item.staticAttributionText) {
+          // add attribution overlay
+          const attributionText = query.attributionText || item.staticAttributionText;
+          if (opt_mode === 'static' && attributionText) {
             const canvas = createCanvas(scale * width, scale * height);
             const ctx = canvas.getContext('2d');
             ctx.scale(scale, scale);
 
             ctx.font = '10px sans-serif';
-            const text = item.staticAttributionText;
-            const textMetrics = ctx.measureText(text);
+            const textMetrics = ctx.measureText(attributionText);
             const textWidth = textMetrics.width;
             const textHeight = 14;
 
@@ -821,7 +822,7 @@ export const serve_rendered = {
             );
             ctx.fillStyle = 'rgba(0,0,0,.8)';
             ctx.fillText(
-              item.staticAttributionText,
+              attributionText,
               width - textWidth - padding / 2,
               height - textHeight + 8,
             );
@@ -908,7 +909,7 @@ export const serve_rendered = {
           scale,
           format,
           res,
-          next,
+          'tile',
         );
       },
     );
@@ -932,11 +933,6 @@ export const serve_rendered = {
             const item = repo[req.params.id];
             if (!item) {
               return res.sendStatus(404);
-            }
-
-            // override attribution text
-            if (req.query.attributionText) {
-              item.staticAttributionText = req.query.attributionText;
             }
 
             const raw = req.params.raw;
@@ -996,9 +992,9 @@ export const serve_rendered = {
               scale,
               format,
               res,
-              next,
-              overlay,
               'static',
+              overlay,
+              req.query,
             );
           } catch (e) {
             next(e);
@@ -1077,9 +1073,9 @@ export const serve_rendered = {
             scale,
             format,
             res,
-            next,
-            overlay,
             'static',
+            overlay,
+            req.query,
           );
         } catch (e) {
           next(e);
@@ -1211,9 +1207,9 @@ export const serve_rendered = {
               scale,
               format,
               res,
-              next,
-              overlay,
               'static',
+              overlay,
+              req.query,
             );
           } catch (e) {
             next(e);
@@ -1483,8 +1479,7 @@ export const serve_rendered = {
       dataProjWGStoInternalWGS: null,
       lastModified: new Date().toUTCString(),
       watermark: params.watermark || options.watermark,
-      staticAttributionText:
-        params.staticAttributionText || options.staticAttributionText,
+      staticAttributionText: params.staticAttributionText || options.staticAttributionText,
     };
     repo[id] = repoobj;
 
