@@ -10,11 +10,82 @@
   <script src="{{public_url}}maplibre-gl.js{{&key_query}}"></script>
   <script src="{{public_url}}maplibre-gl-inspect.min.js{{&key_query}}"></script>
   <style>
-    body {background:#fff;color:#333;font-family:Arial, sans-serif;}
-    #map {position:absolute;top:0;left:0;right:250px;bottom:0;}
-    h1 {position:absolute;top:5px;right:0;width:240px;margin:0;line-height:20px;font-size:20px;}
-    #layerList {position:absolute;top:35px;right:0;bottom:0;width:240px;overflow:auto;}
-    #layerList div div {width:15px;height:15px;display:inline-block;}
+    body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #333;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 270px;
+      bottom: 0;
+    }
+
+    h1 {
+      position: absolute;
+      top: 5px;
+      right: 0;
+      width: 240px;
+      margin: 0;
+      line-height: 20px;
+      font-size: 20px;
+    }
+
+    #layerList {
+      position: absolute;
+      top: 35px;
+      right: 0;
+      bottom: 0;
+      width: 260px;
+      overflow: auto;
+    }
+
+    #layerList:hover {
+      cursor: pointer;
+    }
+
+    #layerList .layer {
+      display:  flex;
+      align-items:  center;
+      margin-bottom:  5px;
+    }
+
+    #layerList .layerColor {
+      width: 15px;
+      height: 15px;
+      display: inline-block;
+      margin-right: 3px;
+    }
+
+    .layerName.disabled {
+      text-decoration: line-through;
+    }
+
+    .showLabels {
+      display: flex;
+      align-items: center;
+      margin-top: 24px;
+    }
+
+    .showLabels input {
+      margin-left: 0;
+      margin-right: 3px;
+    }
+
+    .showLabels label {
+      font-size: 16px;
+    }
+
+    .showLabels label:hover {
+      cursor: pointer;
+    }
+
+
   </style>
   {{/is_vector}}
   {{^is_vector}}
@@ -47,54 +118,173 @@
   <div id="layerList"></div>
   <pre id="propertyList"></pre>
   <script>
-  var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
-  var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';
-    
-  var map = new maplibregl.Map({
-    container: 'map',
-    hash: true,
-    maplibreLogo: true,
-    maxPitch: 85,
-    style: {
-      version: 8,
-      sources: {
-        'vector_layer_': {
-          type: 'vector',
-          url: '{{public_url}}data/{{id}}.json' + keyParam
+    var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
+    var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';
+
+    var map = new maplibregl.Map({
+      container: 'map',
+      hash: true,
+      maplibreLogo: true,
+      maxPitch: 85,
+      style: {
+        version: 8,
+        sources: {
+          'vector_layer_': {
+            type: 'vector',
+            url: '{{public_url}}data/{{id}}.json' + keyParam
+          }
+        },
+        layers: []
+      }
+    });
+    map.addControl(new maplibregl.NavigationControl());
+
+    var inspect = new MaplibreInspect({
+      showInspectMap: true,
+      showInspectButton: false,
+      showInspectMapPopupOnHover: false,
+      popup: new maplibregl.Popup({
+        closeButton: true,
+        closeOnClick: false,
+      }),
+    });
+    map.addControl(inspect);
+
+    map.on('load', function() {
+      // update glyphs field
+      var style = map.getStyle();
+      style.glyphs = '/fonts/{fontstack}/{range}.pbf';
+      map.setStyle(style);
+
+      const toggleLabels = function(showLabels) {
+        if (showLabels) {
+          // add labels for point fields
+          map.getStyle().layers.forEach(function(layer) {
+            if (layer.type === 'circle') {
+              const labelStyle = {
+                id: [layer['source-layer'], 'label'].join('-'),
+                source: layer.source,
+                'source-layer': layer['source-layer'],
+                type: 'symbol',
+                'layout': {
+                  'text-font': [
+                    'Roboto Mono Regular'
+                  ],
+                  'text-size': 10,
+                  'text-field': [
+                    'coalesce',
+                    ['get', 'name'],
+                    ['get', 'name_en'],
+                    ['get', 'name:en'],
+                    ['get', 'name:latin']
+                  ],
+                  'text-anchor': 'top',
+                  'text-offset': [
+                    0,
+                    0.8
+                  ],
+                  'text-max-width': 8
+                },
+                'paint': {
+                  'text-opacity': 1,
+                  'text-halo-blur': 1,
+                  'text-halo-color': '#FFFFFF',
+                  'text-halo-width': 1,
+                  'text-color': inspect.assignLayerColor(layer['source-layer']),
+                },
+                filter: [
+                  'any',
+                  ['has', 'name'],
+                  ['has','name_en'],
+                  ['has','name:en'],
+                  ['has','name:latin']
+                ]
+              };
+              map.addLayer(labelStyle);
+            };
+          });
+        } else { // remove labels
+          map.getStyle().layers.forEach(function(layer) {
+            if (layer.type === 'symbol') {
+              map.removeLayer(layer.id);
+            }
+          });
         }
-      },
-      layers: []
-    }
-  });
-  map.addControl(new maplibregl.NavigationControl());
-  var inspect = new MaplibreInspect({
-    showInspectMap: true,
-    showInspectButton: false
-  });
-  map.addControl(inspect);
-  map.on('styledata', function() {
-    var layerList = document.getElementById('layerList');
-    layerList.innerHTML = '';
-    Object.keys(inspect.sources).forEach(function(sourceId) {
-      var layerIds = inspect.sources[sourceId];
-      layerIds.forEach(function(layerId) {
-        var item = document.createElement('div');
-        item.innerHTML = '<div style="' +
-          'background:' + inspect.assignLayerColor(layerId) + ';' +
-        '"></div> ' + layerId;
-        layerList.appendChild(item);
+      };
+
+      // construst layer list
+      var layerList = document.getElementById('layerList');
+      layerList.innerHTML = '';
+
+      Object.keys(inspect.sources).forEach(function(sourceId) {
+        const layerIds = inspect.sources[sourceId];
+        layerIds.forEach(function(layerId) {
+          const layerColor = inspect.assignLayerColor(layerId);
+          const layerDiv = document.createElement('div');
+          layerDiv.className = "layer";
+
+          // toggle layer visibility
+          layerDiv.onclick = function(e) {
+            const sourceLayers = map.getStyle().layers.filter((layer) => layer['source-layer'] === layerId);
+            sourceLayers.forEach((layer) => {
+              const visibility = map.getLayoutProperty(layer.id, 'visibility');
+              const isVisible = (visibility === 'visible' || visibility === undefined); // undefined defaults to visible
+              map.setLayoutProperty(layer.id, 'visibility', isVisible ? 'none' : 'visible');
+            });
+            e.target.classList.toggle('disabled');
+          };
+
+          // create layer items for list in right panel
+          const colorDiv = document.createElement('div');
+          colorDiv.className = "layerColor";
+          colorDiv.style.background = layerColor;
+
+          const nameDiv = document.createElement('div');
+          nameDiv.className = "layerName";
+          nameDiv.innerText = layerId;
+
+          layerDiv.appendChild(colorDiv);
+          layerDiv.appendChild(nameDiv);
+          layerList.appendChild(layerDiv);
+        });
+
+        // append table for showing labels (if applicable)
+        const hasLabels = map.getStyle().layers.find(function(layer) {
+          return layer.type === 'circle';
+        });
+        if (hasLabels) {
+          toggleLabels(true);
+          const toggleDiv = document.createElement('div');
+          toggleDiv.className = 'showLabels';
+
+          const toggleInput = document.createElement('input');
+          toggleInput.id = 'labelToggle';
+          toggleInput.type = 'checkbox'
+          toggleInput.checked = true;
+          toggleInput.onchange = function(e) {
+            console.log('TOGGLE!', e.target.checked);
+            toggleLabels(e.target.checked);
+          }
+          toggleDiv.appendChild(toggleInput);
+
+          const toggleLabel = document.createElement('label');
+          toggleLabel.htmlFor = 'labelToggle';
+          toggleLabel.innerText = 'Show labels';
+          toggleDiv.appendChild(toggleLabel);
+
+          layerList.appendChild(toggleDiv);
+        }
       });
-    })
-  });
+    });
   </script>
   {{/is_vector}}
   {{^is_vector}}
   <h1 style="display:none;">{{name}}</h1>
   <div id='map'></div>
   <script>
-  var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
-  var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';    
-    
+    var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
+    var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';
+
     var map = L.map('map', { zoomControl: false });
     new L.Control.Zoom({ position: 'topright' }).addTo(map);
 
@@ -104,37 +294,37 @@
     req.overrideMimeType("application/json");
     req.open('GET', url, true);
     req.onload = function() {
-        var jsonResponse = JSON.parse(req.responseText);
-        for (key in jsonResponse) {
-          var keyl = key.toLowerCase();
-            switch(keyl) {
-              case "tiles":
-                tile_urls = jsonResponse[key];
-                break;
-              case "attribution":
-                tile_attribution = jsonResponse[key];
-                break;
-              case "minzoom":
-                tile_minzoom = jsonResponse[key];
-                break;
-              case "maxzoom":
-                tile_maxzoom = jsonResponse[key];
-                break;
-            }
-        }
+      var jsonResponse = JSON.parse(req.responseText);
+      for (key in jsonResponse) {
+        var keyl = key.toLowerCase();
+          switch(keyl) {
+            case "tiles":
+              tile_urls = jsonResponse[key];
+              break;
+            case "attribution":
+              tile_attribution = jsonResponse[key];
+              break;
+            case "minzoom":
+              tile_minzoom = jsonResponse[key];
+              break;
+            case "maxzoom":
+              tile_maxzoom = jsonResponse[key];
+              break;
+          }
+      }
 
-        for (tile_url in tile_urls) {
-            L.tileLayer(tile_urls[tile_url], {
-                minZoom: tile_minzoom,
-                maxZoom: tile_maxzoom,
-                attribution: tile_attribution
-            }).addTo(map);
-        }
-        
-        map.eachLayer(function(layer) {
-          // do not add scale prefix even if retina display is detected
-          layer.scalePrefix = '.';
-        });
+      for (tile_url in tile_urls) {
+        L.tileLayer(tile_urls[tile_url], {
+            minZoom: tile_minzoom,
+            maxZoom: tile_maxzoom,
+            attribution: tile_attribution
+        }).addTo(map);
+      }
+
+      map.eachLayer(function(layer) {
+        // do not add scale prefix even if retina display is detected
+        layer.scalePrefix = '.';
+      });
     };
     req.send(null);
 
